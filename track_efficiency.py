@@ -33,7 +33,7 @@ def main(args):
         # n_events = config['n_files']
         n_events = 200
         # n_events = 500
-        # n_events = 1
+        # n_events = 10
         # n_events = 24
 
 
@@ -137,8 +137,13 @@ def main(args):
         mdl = EdgeNetWithCategories(input_dim=3, hidden_dim=64, edge_dim=N_attr, output_dim=2, n_iters=6).to('cuda:0')
         # mdl = EdgeNetWithCategories(input_dim=3, hidden_dim=64, edge_dim=N_attr, output_dim=2, n_iters=6).to('cpu:0')
     elif (type == "interaction_network"):
-        model_fname = '/data/gnn_code/hgcal_ldrd/output/'+model_group+'/checkpoints/model_checkpoint_InteractionNetwork_6448_77ce67e079_atkinsn2.best.pth.tar'
-        mdl = InteractionNetwork(input_dim=3, hidden_dim=64, edge_dim=N_attr, output_dim=2, n_iters=6).to('cuda:0')
+        # model_fname = '/data/gnn_code/hgcal_ldrd/output/'+model_group+'/checkpoints/model_checkpoint_InteractionNetwork_6448_77ce67e079_atkinsn2.best.pth.tar'
+        # model_fname = '/data/gnn_code/hgcal_ldrd/output/'+model_group+'/checkpoints/model_checkpoint_InteractionNetwork_9558_f9fcff2bfe_atkinsn2.best.pth.tar'
+        # model_fname = '/data/gnn_code/hgcal_ldrd/output/'+model_group+'/checkpoints/model_checkpoint_InteractionNetwork_22488_7d94caeb8a_atkinsn2.best.pth.tar'
+        # model_fname = '/data/gnn_code/hgcal_ldrd/output/'+model_group+'/checkpoints/model_checkpoint_InteractionNetwork_73658_99bfbda303_atkinsn2.best.pth.tar'
+        # model_fname = '/data/gnn_code/hgcal_ldrd/output/'+model_group+'/checkpoints/model_checkpoint_InteractionNetwork_282308_620b37ae37_atkinsn2.best.pth.tar'
+        model_fname = '/data/gnn_code/hgcal_ldrd/output/'+model_group+'/checkpoints/model_checkpoint_InteractionNetwork_16721_5e48b5fd7c_atkinsn2.best.pth.tar'
+        mdl = InteractionNetwork(input_dim=3, hidden_dim=40, edge_dim=N_attr, output_dim=2, n_iters=6).to('cuda:0')
 
 
     mdl.load_state_dict(torch.load(model_fname)['model'])
@@ -185,11 +190,14 @@ def main(args):
             # out = np.greater(pred_edges_np, 0.5).astype(np.int_)
             out = np.greater(pred_edges_np, 0.511).astype(np.int_)   #Triplets TrackML
             # out = np.greater(pred_edges_np, 0.522).astype(np.int_) #Triplets
+            # out = np.greater(pred_edges_np, 0.555).astype(np.int_) #Triplets
             # out = np.greater(pred_edges_np, 0.5195).astype(np.int_) #Doublets
 
         elif (type == "interaction_network"):
-            out = np.greater(pred_edges_np, 0.5).astype(np.int_)
-
+            # out = np.transpose(np.greater(pred_edges_np, 0.5).astype(np.int_))[0]
+            # out = np.transpose(np.greater(pred_edges_np, 0.1).astype(np.int_))[0]
+            out = np.transpose(np.greater(pred_edges_np, 0.96).astype(np.int_))[0]
+            pred_edges_np = np.transpose(pred_edges_np)[0]
 
         # Extract Graph features
         X = trackml_data[idx].x.cpu().numpy()
@@ -220,6 +228,8 @@ def main(args):
 
         track_prune = track_attr[track_attr[:,3] >= Hits_minimum] # Prunes Denominator
         # track_prune = track_attr # Full Denominator
+
+        # track_prune =
 
 
         # Truth particle parameters
@@ -282,25 +292,26 @@ def main(args):
         for i in range(len(gnn_clusters_sel)):
             all_paths = [gnn_clusters_sel[i]]
 
-
-            if trackml_data.directed:
-                new_paths = find_all_paths(gnn_clusters_sel[i], f_pred_true_index, f_pred_true_weights)
-            else:
-                # new_paths = find_all_paths(list(gnn_clusters_sel[i]), f_pred_true_index, f_pred_true_weights)
-
-                # new_paths = find_all_paths(list(gnn_clusters_sel[i])[::-1], b_pred_true_index, b_pred_true_weights)
-
-                f_paths = find_all_paths(list(gnn_clusters_sel[i]), f_pred_true_index, f_pred_true_weights)
-                b_paths = find_all_paths(list(gnn_clusters_sel[i])[::-1], b_pred_true_index, b_pred_true_weights)
-                b_paths = [path[::-1] for path in b_paths]
-                new_paths = []
-                for i in f_paths + b_paths:
-                    if i not in new_paths:
-                        new_paths.append(i)
-            if len(new_paths) > 0:
-                new_paths = [new_paths[np.argmax(np.asarray([len(i) for i in new_paths]))]]             # Longest Path
-                if len(new_paths[0]) >= Hits_minimum:
-                    all_paths = new_paths
+            ########################  WRANGLER  ###########################
+            # if trackml_data.directed:
+            #     new_paths = find_all_paths(gnn_clusters_sel[i], f_pred_true_index, f_pred_true_weights)
+            # else:
+            #     # new_paths = find_all_paths(list(gnn_clusters_sel[i]), f_pred_true_index, f_pred_true_weights)
+            #
+            #     # new_paths = find_all_paths(list(gnn_clusters_sel[i])[::-1], b_pred_true_index, b_pred_true_weights)
+            #
+            #     f_paths = find_all_paths(list(gnn_clusters_sel[i]), f_pred_true_index, f_pred_true_weights)
+            #     b_paths = find_all_paths(list(gnn_clusters_sel[i])[::-1], b_pred_true_index, b_pred_true_weights)
+            #     b_paths = [path[::-1] for path in b_paths]
+            #     new_paths = []
+            #     for i in f_paths + b_paths:
+            #         if i not in new_paths:
+            #             new_paths.append(i)
+            # if len(new_paths) > 0:
+            #     new_paths = [new_paths[np.argmax(np.asarray([len(i) for i in new_paths]))]]             # Longest Path
+            #     if len(new_paths[0]) >= Hits_minimum:
+            #         all_paths = new_paths
+            ########################  WRANGLER  ###########################
 
 
             for track_candidate in all_paths:
@@ -311,8 +322,8 @@ def main(args):
                 purity = np.max(count) / np.sum(count)
                 particle = particle[np.argmax(count)]
 
-                # threshold = 1.0
-                threshold = 0.5
+                threshold = 1.0
+                # threshold = 0.5
 
                 found_previously = np.isin(particle, found_particles)
                 if(purity >= threshold and particle == 0):  # Noise Track
@@ -579,7 +590,7 @@ def main(args):
     ax2.set_xlim(0, 5)
     ax2.set_ylabel('Track Efficiency')
     ax2.set_ylim(0, 1)
-    ax2.set_ylim(.9, 1)
+    # ax2.set_ylim(.9, 1)
     fig2.savefig(file_root + '_pt_efficiencies.pdf', dpi=dpi)
     fig2.savefig(file_root + '_pt_efficiencies.png', dpi=dpi)
 
@@ -592,7 +603,9 @@ def main(args):
     ax3.set_xlim(-4, 4)
     ax3.set_ylabel('Track Efficiency')
     # ax3.set_ylim(0, 1)
-    ax3.set_ylim(.9, 1)
+    ax3.set_ylim(.5, 1)
+    # ax3.set_ylim(.8, 1)
+    # ax3.set_ylim(.9, 1)
     fig3.savefig(file_root + '_eta_efficiencies.pdf', dpi=dpi)
     fig3.savefig(file_root + '_eta_efficiencies.png', dpi=dpi)
     with open(f'./{file_root}.pkl', 'wb') as fid:
@@ -977,12 +990,15 @@ def find_all_paths(node_cluster, edge_index, edge_weights):
 
                 good_step = []
                 if (len(next_weight) > 0):
-                    good_weight = next_weight[next_weight > 0.511]
+                    # good_weight = next_weight[next_weight > 0.555]
+                    good_weight = next_weight[next_weight > 0.8]
                     if (len(good_weight) > 0):
-                        good_step = next_step[next_weight > 0.511]
+                        # good_step = next_step[next_weight > 0.555]
+                        good_step = next_step[next_weight > 0.8]
                     else:
                         good_weight = [max(next_weight)]
-                        if (good_weight[0] > 0.511):
+                        # if (good_weight[0] > 0.555):
+                        if (good_weight[0] > 0.3):
                             good_step = next_step[next_weight == good_weight[0]]
 
                 if (len(good_step) > 0):
